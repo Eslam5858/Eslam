@@ -1,21 +1,19 @@
-<div
-    class="relative max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700">
-    <a href="{{ route('movies.show', $movie->id) }}">
-        <img class="rounded-t-lg" src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" />
-    </a>
-    <div class="p-5">
-        <a href="{{ route('movies.show', $movie->id) }}">
-            <h5 class="h-10 mb-3 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                {{ mb_strimwidth($movie->title, 0, 20, '...') }}
-            </h5>
-        </a>
+<div class="movie-card bg-white rounded-lg shadow-lg overflow-hidden">
+    <img src="{{ asset($movie->poster_url) }}" 
+         alt="{{ $movie->title }}" 
+         style="width:100%; height:300px; object-fit:cover; border-radius: 10px;">
+    <div style="padding: 10px;">
+        <h2 class="text-xl font-semibold mb-2">{{ $movie->title }}</h2>
+        <p class="text-gray-600 mb-2">{{ Str::limit($movie->description, 100) }}</p>
+        <p class="text-sm text-gray-500"><strong>Released:</strong> {{ \Carbon\Carbon::parse($movie->release_date)->format('Y') }}</p>
+        <p class="text-sm text-gray-500"><strong>Age Rating:</strong> {{ $movie->age_rating }}+</p>
+        <p class="text-sm text-gray-500"><strong>Price:</strong> ${{ number_format($movie->ticket_price, 2) }}</p>
 
-        <p class="h-10 mb-3 font-normal text-gray-700 dark:text-gray-400">
-            {{ mb_strimwidth($movie->description, 0, 50, '...') }}
-        </p>
+        <div class="mt-4">
+            <a href="{{ route('movies.show', $movie->id) }}" 
+               class="inline-block bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 transition">
+                Book Now
+            </a>
     </div>
-
-    <div class="flex flex-wrap m-3">
-        <x-movie-info :movie="$movie" />
     </div>
 </div>

@@ -6,6 +6,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminMovieController;
 use Illuminate\Support\Facades\Route;
+use App\Models\Movie;
+use Illuminate\Support\Facades\DB;
+use App\Enums\BookingStatus;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,4 +57,53 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/movies/{movie}/edit', [AdminMovieController::class, 'edit'])->name('admin.movies.edit');
     Route::put('/movies/{movie}', [AdminMovieController::class, 'update'])->name('admin.movies.update');
     Route::delete('/movies/{movie}', [AdminMovieController::class, 'destroy'])->name('admin.movies.destroy');
+});
+
+Route::get('/movies/{movie}/book', function (\App\Models\Movie $movie) {
+    $bookedSeats = DB::table('booked_seats')
+        ->join('bookings', 'booked_seats.booking_id', '=', 'bookings.id')
+        ->where('bookings.movie_id', $movie->id)
+        ->pluck('booked_seats.seat_id')
+        ->toArray();
+
+    return view('movies.seats', compact('movie', 'bookedSeats'));
+})->name('movies.book');
+
+Route::post('/movies/{movie}/book', function (\Illuminate\Http\Request $request, \App\Models\Movie $movie) {
+    // التحقق من وجود $movie
+    if (!$movie) {
+        return redirect()->back()->with('error', 'Movie not found');
+    }
+
+    $seats = explode(',', $request->input('seats'));
+
+    // للتأكد من البيانات
+    \Log::info('Booking attempt', [
+        'movie_id' => $movie->id,
+        'seats' => $seats
+    ]);
+
+    $booking = \App\Models\Booking::create([
+        'movie_id' => $movie->id,
+        'user_id' => auth()->id() ?? 1,
+        'date_showtime_id' => 1,
+        'total_price' => count($seats) * $movie->ticket_price,
+        'status' => BookingStatus::PAID, // نستخدم PAID لأنه موجود في Enum
+    ]);
+
+    foreach ($seats as $seatId) {
+        DB::table('booked_seats')->insert([
+            'booking_id' => $booking->id,
+            'seat_id' => trim($seatId),
+            'date_showtime_id' => 1,
+        ]);
+    }
+
+    return redirect()->route('movies.book', $movie->id)
+        ->with('success', 'Booking completed!');
+})->name('movies.book.store');
+
+Route::get('/movies', function () {
+    $movies = Movie::all();
+    return view('movies.index', compact('movies'));
 });

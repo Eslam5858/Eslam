@@ -5,7 +5,7 @@
     <section id="movie-details" class="p-6 max-w-screen-lg mx-auto">
         <div
             class="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-lg shadow-lg w-full max-w-screen-lg mx-auto md:flex-row md:max-w-7xl dark:border-gray-700 dark:bg-gray-800">
-            <img class="object-cover w-full rounded-t-lg md:rounded-none md:rounded-l-lg" src="{{ $movie->poster_url }}"
+            <img class="object-cover w-full rounded-t-lg md:rounded-none md:rounded-l-lg" src="{{ asset($movie->poster_url) }}"
                 alt="{{ $movie->title }}" />
             <div class="flex flex-col justify-between p-4 leading-normal">
                 <h5 class="mb-2 text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -17,6 +17,12 @@
                 <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">
                     {{ $movie->description }}
                 </p>
+                
+                {{-- زر الحجز --}}
+                <a href="{{ route('movies.book', $movie->id) }}" 
+                   style="display: inline-block; padding: 12px 24px; background: orange; color: black; font-weight: bold; border-radius: 6px; text-decoration: none; margin-top: 20px; text-align: center;">
+                    🎟️ Book Now
+                </a>
             </div>
         </div>
     </section>

@@ -4,7 +4,7 @@
     class="flex flex-col md:flex-row items-center justify-center bg-white border border-gray-200 rounded-lg shadow-lg w-full p-5 mb-3 max-w-screen-lg mx-auto dark:border-gray-700 dark:bg-gray-800">
     <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
         <a href="{{ route('movies.show', $booking->movie) }}">
-            <img class="w-32 rounded-lg h-auto" src="{{ $booking->movie->poster_url }}" alt="{{ $booking->movie->title }}">
+            <img class="w-32 rounded-lg h-auto" src="{{ asset($booking->movie->poster_url) }}" alt="{{ $booking->movie->title }}">
         </a>
     </div>
     <div class="flex flex-col flex-grow">
