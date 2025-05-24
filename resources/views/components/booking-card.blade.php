@@ -28,7 +28,7 @@
                     Total Price
                 </h3>
                 <p class="text-gray-700 dark:text-gray-300">
-                    Rp {{ number_format($booking->total_price) }}
+                    ${{ number_format($booking->total_price, 2) }}
                 </p>
             </div>
             <div>

@@ -28,10 +28,11 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $formFields = $request->validate([
-            'username' => ['required', 'min:5', 'max:20'],
+            'username' => ['required', 'min:5', 'max:20', 'unique:users,username'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'min:8', 'max:255'],
             'name' => ['required', 'min:5', 'max:50'],
-            'age' => ['required', 'integer']
+            'age' => ['required', 'integer'],
         ]);
 
         $formFields['password'] = bcrypt($formFields['password']);
@@ -62,7 +63,7 @@ class UserController extends Controller
     public function auth(Request $request): RedirectResponse
     {
         $formFields = $request->validate([
-            'username' => ['required', 'min:5', 'max:20'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'min:8', 'max:255'],
         ]);
 
@@ -76,9 +77,9 @@ class UserController extends Controller
 
         return back()
             ->withErrors([
-                'username' => 'Incorrect username or password.',
+                'email' => 'Incorrect email or password.',
             ])
-            ->onlyInput('username');
+            ->onlyInput('email');
     }
 
     /**
@@ -134,7 +135,7 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $request->validate([
-            'username' => ['sometimes', 'required', 'min:5', 'max:20'],
+            'email' => ['sometimes', 'required', 'email', 'unique:users,email,' . $user->id],
             'name' => ['sometimes', 'required', 'min:5', 'max:50'],
             'age' => ['sometimes', 'required', 'integer'],
             'amount' => ['sometimes', 'required', 'integer'],
@@ -142,8 +143,8 @@ class UserController extends Controller
 
         $user = auth()->user();
 
-        if ($request->has('username')) {
-            $user->username = $request->username;
+        if ($request->has('email')) {
+            $user->email = $request->email;
         }
 
         if ($request->has('name')) {
@@ -158,7 +159,7 @@ class UserController extends Controller
             $user->increment('balance', $request->amount);
         }
 
-        $user->update();
+        $user->save();
 
         return redirect()
             ->route('profile')

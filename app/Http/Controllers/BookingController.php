@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use App\Notifications\BookingConfirmation;
 use App\Notifications\BookingCancellation;
+use Inertia\Inertia;
 
 class BookingController extends Controller
 {
@@ -28,32 +29,40 @@ class BookingController extends Controller
      */
     public function create(Movie $movie, Date $date, Showtime $showtime): View|RedirectResponse
     {
-        $user = User::find(auth()->id());
-
-        // check if the user is old enough to watch the movie
-        if ($user->age < $movie->age_rating) {
-            return back()
-                ->with('error', 'You are not old enough to watch this movie!');
+        // Check if user is logged in
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Please login to book tickets.');
         }
 
-        $currentDate = today('Asia/Jakarta')->format('Y-m-d');
-        $currentTime = now('Asia/Jakarta')->format('H:i:s');
-
-        // date formatting
-        $formattedDate = $date->date->format('Y-m-d');
-        $isToday = $formattedDate == $currentDate;
-        $isPastDate = $formattedDate < $currentDate;
-        $isPastShowtime = $showtime->start_time < $currentTime;
-
-        // check if the date and showtime is in the past of the current date and time
-        if ($isPastDate || ($isToday && $isPastShowtime)) {
-            return back()
-                ->with('error', 'Cannot book tickets for past dates and showtimes!');
+        // Check if user is old enough to watch the movie
+        if (auth()->user()->age < $movie->age_rating) {
+            return back()->with('error', 'You are not old enough to watch this movie.');
         }
 
-        $seats = Seat::all();
+        // Check if the date and showtime are valid for booking
+        $currentDate = now()->format('Y-m-d');
+        $currentTime = now()->format('H:i:s');
+        
+        if ($date->date->format('Y-m-d') < $currentDate) {
+            return back()->with('error', 'Cannot book tickets for past dates.');
+        }
+        
+        if ($date->date->format('Y-m-d') == $currentDate && $showtime->start_time < $currentTime) {
+            return back()->with('error', 'Cannot book tickets for past showtimes.');
+        }
 
-        return view('bookings.create', compact('movie', 'date', 'showtime', 'seats'));
+        // Get available seats
+        $seats = Seat::whereDoesntHave('bookings', function ($query) use ($date, $showtime) {
+            $query->where('date_id', $date->id)
+                  ->where('showtime_id', $showtime->id);
+        })->get();
+
+        return Inertia::render('Bookings/Create', [
+            'movie' => $movie,
+            'date' => $date,
+            'showtime' => $showtime,
+            'seats' => $seats
+        ]);
     }
 
     /**
@@ -65,46 +74,64 @@ class BookingController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'seats' => ['required', 'array', 'min:1', 'max:6', 'exists:seats,id'],
+            'movie_id' => 'required|exists:movies,id',
+            'date_id' => 'required|exists:dates,id',
+            'showtime_id' => 'required|exists:showtimes,id',
+            'seats' => 'required|array|min:1',
+            'seats.*' => 'exists:seats,id'
         ]);
 
-        $user = User::find(auth()->id());
-        $movie = Movie::find($request->movie);
-        $date = Date::find($request->date);
-        $showtime = Showtime::find($request->showtime);
-        $seats = Seat::find($request->seats);
-        $date_showtime = DateShowtime::where('date_id', $date->id)
+        // Check if user is logged in
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Please login to book tickets.');
+        }
+
+        $movie = Movie::findOrFail($request->movie_id);
+        $date = Date::findOrFail($request->date_id);
+        $showtime = Showtime::findOrFail($request->showtime_id);
+
+        // Check if user is old enough
+        if (auth()->user()->age < $movie->age_rating) {
+            return back()->with('error', 'You are not old enough to watch this movie.');
+        }
+
+        // Check if seats are available
+        $bookedSeats = Booking::where('date_id', $date->id)
             ->where('showtime_id', $showtime->id)
-            ->first();
+            ->whereIn('seat_id', $request->seats)
+            ->exists();
 
-        $booking = new Booking();
-        $booking->user_id = $user->id;
-        $booking->movie_id = $movie->id;
-        $booking->date_showtime_id = $date_showtime->id;
-        $booking->total_price = count($request->seats) * $movie->ticket_price;
-        $booking->status = BookingStatus::PAID;
-
-        // check if the user has enough balance to book the tickets
-        if ($user->balance < $booking->total_price) {
-            return back()
-                ->with('error', 'You do not have enough balance to book these tickets!');
+        if ($bookedSeats) {
+            return back()->with('error', 'One or more selected seats are already booked.');
         }
 
-        $user->balance -= $booking->total_price;
+        // Calculate total price
+        $totalPrice = count($request->seats) * $movie->ticket_price;
 
-        $user->update();
-        $booking->save();
-
-        foreach ($seats as $seat) {
-            $booking->seats()->attach($seat->id, ['date_showtime_id' => $date_showtime->id]);
+        // Check if user has enough balance
+        if (auth()->user()->balance < $totalPrice) {
+            return back()->with('error', 'Insufficient balance. Please top up your account.');
         }
 
-        // Send booking confirmation notification
-        $user->notify(new BookingConfirmation($booking));
+        // Create bookings
+        foreach ($request->seats as $seatId) {
+            Booking::create([
+                'user_id' => auth()->id(),
+                'movie_id' => $movie->id,
+                'date_id' => $date->id,
+                'showtime_id' => $showtime->id,
+                'seat_id' => $seatId,
+                'total_price' => $movie->ticket_price
+            ]);
+        }
 
-        return redirect()
-            ->route('home')
-            ->with('success', 'Successfully booked tickets!');
+        // Deduct balance
+        auth()->user()->update([
+            'balance' => auth()->user()->balance - $totalPrice
+        ]);
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Tickets booked successfully!');
     }
 
     /**

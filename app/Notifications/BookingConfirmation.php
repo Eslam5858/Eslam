@@ -45,7 +45,7 @@ class BookingConfirmation extends Notification implements ShouldQueue
             ->line('Date: ' . $this->booking->dateShowtime->date->date->format('M d, Y'))
             ->line('Time: ' . $this->booking->dateShowtime->showtime->start_time)
             ->line('Seats: ' . $this->booking->seats->pluck('seat_number')->implode(', '))
-            ->line('Total Price: $' . $this->booking->total_price)
+            ->line('Total Price: $' . number_format($this->booking->total_price, 2))
             ->action('View Booking', route('bookings.show', $this->booking))
             ->line('Thank you for choosing our cinema!');
     }

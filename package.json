@@ -20,7 +20,10 @@
         "vite": "^4.0.0"
     },
     "dependencies": {
+        "@inertiajs/react": "^2.0.11",
         "node-cron": "^3.0.2",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
         "shelljs": "^0.8.5"
     }
 }

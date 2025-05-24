@@ -29,14 +29,14 @@
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                @foreach ($movie->dates as $date)
-                    <x-date-card :date="$date">
-                        @foreach ($date->showtimes as $showtime)
-                            <x-showtime-button :showtime="$showtime" :movie="$movie" :date="$date" :currentDate="$currentDate"
-                                :currentTime="$currentTime" />
-                        @endforeach
-                    </x-date-card>
-                @endforeach
+{{--                @foreach ($movie->dates as $date)--}}
+{{--                    <x-date-card :date="$date">--}}
+{{--                        @foreach ($date->showtimes as $showtime)--}}
+{{--                            <x-showtime-button :showtime="$showtime" :movie="$movie" :date="$date" :currentDate="$currentDate"--}}
+{{--                                :currentTime="$currentTime" :currentTimestamp="$currentTimestamp" />--}}
+{{--                        @endforeach--}}
+{{--                    </x-date-card>--}}
+{{--                @endforeach--}}
             </div>
         </div>
     </section>

@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use App\Models\Date;
 use App\Models\Movie;
 use App\Models\Showtime;
-use Illuminate\Database\Seeder;
+use Carbon\Carbon;
 
 class DateSeeder extends Seeder
 {
@@ -20,25 +21,29 @@ class DateSeeder extends Seeder
         // get all showtimes
         $showtimes = Showtime::all();
 
-        // get dates from now to a week later
-        $startDate = today('Asia/Jakarta');
-        $endDate = $startDate->copy()->addWeeks();
+        // get dates from now to two weeks later
+        $startDate = Carbon::today();
+        $endDate = $startDate->copy()->addWeeks(2);
 
-        while ($startDate->lte($endDate)) {
-            $currentDate = $startDate->copy()->format('Y-m-d');
+        $currentDate = $startDate->copy();
+        while ($currentDate->lte($endDate)) {
+            // Check if the date already exists to avoid duplicates
+            $existingDate = Date::whereDate('date', $currentDate->format('Y-m-d'))->first();
 
-            // create date record
-            $date = Date::create([
-                'date' => $currentDate,
-            ]);
+            if (!$existingDate) {
+                // create date record
+                $date = Date::create([
+                    'date' => $currentDate->format('Y-m-d'),
+                ]);
 
-            // attach date to movies
-            $date->movies()->attach($movies);
+                // attach date to movies
+                $date->movies()->attach($movies);
 
-            // attach date to showtimes
-            $date->showtimes()->attach($showtimes);
+                // attach date to showtimes
+                $date->showtimes()->attach($showtimes);
+            }
 
-            $startDate->addDay();
+            $currentDate->addDay();
         }
     }
 }

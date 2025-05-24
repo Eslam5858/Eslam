@@ -43,7 +43,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $movie->genre }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $movie->release_date->format('M d, Y') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $movie->age_rating }}+</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ $movie->ticket_price }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ number_format($movie->ticket_price, 2) }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <a href="{{ route('admin.movies.edit', $movie) }}" class="text-primary-600 hover:text-primary-900 mr-3">Edit</a>
                         <form action="{{ route('admin.movies.destroy', $movie) }}" method="POST" class="inline">

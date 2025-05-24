@@ -18,9 +18,16 @@ class SeatSeeder extends Seeder
 
         foreach ($alphabet as $row) {
             foreach ($numbers as $number) {
-                Seat::create([
-                    'seat_number' => $row . $number,
-                ]);
+                $seatNumber = $row . $number;
+                
+                // Check if the seat already exists
+                $existingSeat = Seat::where('seat_number', $seatNumber)->first();
+
+                if (!$existingSeat) {
+                    Seat::create([
+                        'seat_number' => $seatNumber,
+                    ]);
+                }
             }
         }
     }

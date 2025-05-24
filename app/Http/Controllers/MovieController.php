@@ -37,8 +37,17 @@ class MovieController extends Controller
         $currentDate = today('Asia/Jakarta')->format('Y-m-d');
         $currentTime = now('Asia/Jakarta')->format('H:i:s');
 
-        $movie = $movie->loadDatesForCurrentWeek();
+        // Load dates for the current week and associate showtimes
+        $movie->load([
+            'dates' => function ($query) use ($currentDate) {
+                $query->where('date', '>=', $currentDate)
+                      ->with('showtimes');
+            }
+        ]);
 
-        return view('movies.show', compact('movie', 'currentDate', 'currentTime'));
+        // Pass the current timestamp to the view
+        $currentTimestamp = now('Asia/Jakarta');
+
+        return view('movies.show', compact('movie', 'currentDate', 'currentTime', 'currentTimestamp'));
     }
 }
