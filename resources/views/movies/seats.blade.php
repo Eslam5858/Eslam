@@ -1,170 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Seats - {{ $movie->title }}</title>
-    <style>
-        body {
-            background-color: #111;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        .movie-info {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .movie-info img {
-            width: 180px;
-            border-radius: 10px;
-        }
-        .legend {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        .legend div {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .seat {
-            width: 40px;
-            height: 40px;
-            background-color: grey;
-            text-align: center;
-            line-height: 40px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .seat.selected {
-            background-color: limegreen;
-        }
-        .seat.booked {
-            background-color: red;
-            cursor: not-allowed;
-        }
-        .screen {
-            background: #444;
-            color: #eee;
-            text-align: center;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .seat-grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 10px;
-        }
-        .proceed-btn {
-            margin-top: 20px;
-            padding: 12px 24px;
-            background-color: orange;
-            color: black;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .proceed-btn:disabled {
-            background-color: #555;
-            color: #999;
-            cursor: not-allowed;
-        }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
 
-<div class="container">
-    <h1>✨ Book Seats for: {{ $movie->title }}</h1>
-    
-    {{-- اختبار وجود bookedSeats --}}
-    <p style="color: limegreen; text-align: center; margin: 20px 0; padding: 10px; background: #1a1a1a; border-radius: 5px;">
-        ✅ Seat grid should appear below.
-    </p>
-    <pre style="color: #fff; background: #1a1a1a; padding: 10px; border-radius: 5px; margin: 10px 0;">
-        bookedSeats: {{ print_r($bookedSeats, true) }}
-    </pre>
+@section('content')
+<div class="container mx-auto p-4 bg-gray-900 rounded-md text-white">
+    <h1 class="text-3xl mb-4">{{ $movie->title }} - Seat Booking</h1>
 
-    <div class="movie-info">
-        <img src="{{ asset($movie->poster_url) }}" alt="{{ $movie->title }}">
+    @if(session('success'))
+        <div class="bg-green-600 p-3 rounded mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="movie-info flex gap-6 mb-8">
+        <img src="{{ asset($movie->poster_url) }}" alt="{{ $movie->title }}" class="w-48 rounded-lg">
         <div>
-            <p><strong>Release Date:</strong> {{ $movie->release_date }}</p>
-            <p><strong>Age Rating:</strong> {{ $movie->age_rating }}+</p>
-            <p><strong>Price:</strong> ${{ number_format($movie->ticket_price, 2) }}</p>
+            <h2 class="text-2xl font-bold mb-2">{{ $movie->title }}</h2>
+            <p class="mb-2"><strong>Release:</strong> {{ \Carbon\Carbon::parse($movie->release_date)->format('F j, Y') }}</p>
+            <p class="mb-2"><strong>Age Rating:</strong> {{ $movie->age_rating }}+</p>
+            <p class="mb-2"><strong>Price:</strong> ${{ number_format($movie->ticket_price, 2) }}</p>
         </div>
     </div>
 
-    <form action="{{ route('movies.book.store', $movie->id) }}" method="POST">
+    <form method="POST" action="{{ route('movies.book.store', $movie->id) }}">
         @csrf
-        <input type="hidden" name="seats" id="selected-seats">
+        <div class="screen bg-gray-700 text-center py-4 mb-8 rounded-lg">
+            SCREEN
+        </div>
 
-        <div class="screen">SCREEN</div>
-
-        {{-- اختبار ظهور المقاعد --}}
-        <div style="color: #fff; background: #1a1a1a; padding: 10px; border-radius: 5px; margin: 10px 0;">
-            <p>اختبار ظهور المقاعد:</p>
-            @for ($i = 1; $i <= 50; $i++)
-                @php $seat = 'S' . $i; @endphp
-                <div style="display: inline-block; margin: 2px;">{{ $seat }}</div>
+        <div id="seat-grid" class="grid grid-cols-10 gap-2 mb-8">
+            @for($i = 1; $i <= 50; $i++)
+                @php
+                    $isBooked = in_array($i, $bookedSeats);
+                @endphp
+                <div
+                    class="seat cursor-pointer border rounded p-3 text-center select-none
+                        {{ $isBooked ? 'bg-red-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700' }}"
+                    data-seat="{{ $i }}"
+                    @if($isBooked) style="pointer-events:none;" @endif
+                >
+                    S{{ $i }}
+                </div>
             @endfor
         </div>
 
-        <div class="seat-grid">
-            @for ($i = 1; $i <= 50; $i++)
-                <div class="seat @if(in_array($i, $bookedSeats)) booked @endif" data-seat="{{ $i }}">{{ $i }}</div>
-            @endfor
+        <input type="hidden" name="seats" id="selected-seats" />
+
+        <div class="mb-4 text-lg">
+            Selected Seats: <span id="selected-count" class="font-bold">0</span>
         </div>
 
-        <div class="legend">
-            <div><div class="seat"></div> Available</div>
-            <div><div class="seat selected"></div> Selected</div>
-            <div><div class="seat booked"></div> Booked</div>
-        </div>
-
-        <p style="margin-top: 10px;">Selected Seats: <span id="count">0</span></p>
-
-        <button type="submit" class="proceed-btn" id="book-btn" disabled>Book Now</button>
+        <button type="submit" id="book-btn" disabled
+            class="bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300">
+            Book Now
+        </button>
     </form>
 </div>
 
 <script>
-    const seats = document.querySelectorAll('.seat:not(.booked)');
+    const seatGrid = document.getElementById('seat-grid');
     const selectedSeatsInput = document.getElementById('selected-seats');
+    const selectedCountSpan = document.getElementById('selected-count');
     const bookBtn = document.getElementById('book-btn');
-    const count = document.getElementById('count');
+
     let selectedSeats = [];
 
-    seats.forEach(seat => {
-        seat.addEventListener('click', () => {
-            seat.classList.toggle('selected');
-            const seatNum = seat.getAttribute('data-seat');
+    seatGrid.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('seat') || e.target.classList.contains('cursor-not-allowed')) return;
 
-            if (selectedSeats.includes(seatNum)) {
-                selectedSeats = selectedSeats.filter(s => s !== seatNum);
-            } else {
-                selectedSeats.push(seatNum);
-            }
+        const seatNumber = e.target.getAttribute('data-seat');
+        const index = selectedSeats.indexOf(seatNumber);
 
-            selectedSeatsInput.value = selectedSeats.join(',');
-            count.textContent = selectedSeats.length;
-            bookBtn.disabled = selectedSeats.length === 0;
-        });
+        if (index > -1) {
+            // Deselect
+            selectedSeats.splice(index, 1);
+            e.target.classList.remove('bg-yellow-500');
+            e.target.classList.add('bg-green-600');
+        } else {
+            // Select
+            selectedSeats.push(seatNumber);
+            e.target.classList.remove('bg-green-600');
+            e.target.classList.add('bg-yellow-500');
+        }
+
+        selectedSeatsInput.value = selectedSeats.join(',');
+        selectedCountSpan.textContent = selectedSeats.length;
+
+        bookBtn.disabled = selectedSeats.length === 0;
     });
 </script>
-
-</body>
-</html> 
+@endsection 

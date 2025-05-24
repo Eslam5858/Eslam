@@ -18,8 +18,8 @@ class Booking extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
         'movie_id',
+        'user_id',
         'date_showtime_id',
         'total_price',
         'status',

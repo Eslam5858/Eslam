@@ -8,7 +8,7 @@ use App\Http\Controllers\AdminMovieController;
 use Illuminate\Support\Facades\Route;
 use App\Models\Movie;
 use Illuminate\Support\Facades\DB;
-use App\Enums\BookingStatus;
+use App\Models\Booking;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,7 +59,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/movies/{movie}', [AdminMovieController::class, 'destroy'])->name('admin.movies.destroy');
 });
 
-Route::get('/movies/{movie}/book', function (\App\Models\Movie $movie) {
+Route::get('/movies/{movie}/book', function (Movie $movie) {
     $bookedSeats = DB::table('booked_seats')
         ->join('bookings', 'booked_seats.booking_id', '=', 'bookings.id')
         ->where('bookings.movie_id', $movie->id)
@@ -69,26 +69,15 @@ Route::get('/movies/{movie}/book', function (\App\Models\Movie $movie) {
     return view('movies.seats', compact('movie', 'bookedSeats'));
 })->name('movies.book');
 
-Route::post('/movies/{movie}/book', function (\Illuminate\Http\Request $request, \App\Models\Movie $movie) {
-    // التحقق من وجود $movie
-    if (!$movie) {
-        return redirect()->back()->with('error', 'Movie not found');
-    }
-
+Route::post('/movies/{movie}/book', function (\Illuminate\Http\Request $request, Movie $movie) {
     $seats = explode(',', $request->input('seats'));
 
-    // للتأكد من البيانات
-    \Log::info('Booking attempt', [
-        'movie_id' => $movie->id,
-        'seats' => $seats
-    ]);
-
-    $booking = \App\Models\Booking::create([
+    $booking = Booking::create([
         'movie_id' => $movie->id,
         'user_id' => auth()->id() ?? 1,
         'date_showtime_id' => 1,
         'total_price' => count($seats) * $movie->ticket_price,
-        'status' => BookingStatus::PAID, // نستخدم PAID لأنه موجود في Enum
+        'status' => 'paid',
     ]);
 
     foreach ($seats as $seatId) {
@@ -100,7 +89,7 @@ Route::post('/movies/{movie}/book', function (\Illuminate\Http\Request $request,
     }
 
     return redirect()->route('movies.book', $movie->id)
-        ->with('success', 'Booking completed!');
+        ->with('success', 'تم الحجز بنجاح!');
 })->name('movies.book.store');
 
 Route::get('/movies', function () {
